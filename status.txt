@@ -1,0 +1,6 @@
+🟡 Script started. Initializing Playwright browser...
+🟢 Browser launched successfully.
+🟡 Navigating to target URL: https://playsza.st/player.php?id=willow
+🟡 Waiting for Cloudflare protection to clear dynamically...
+🔴 Failed: Cloudflare challenge could not be bypassed within time limit.
+🔴 Failed: Master link (.m3u8) could not be captured.
