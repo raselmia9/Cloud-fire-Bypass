@@ -1,7 +1,6 @@
 import time
 import os
-from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+from undetected_playwright.sync_api import sync_playwright
 
 def write_status(status_dot, message):
     log_line = f"{status_dot} {message}\n"
@@ -21,30 +20,14 @@ def get_video_stream():
     if os.path.exists("playlist.m3u"):
         os.remove("playlist.m3u")
 
-    write_status("🟡", "Script started. Initializing Stealth Browser...")
+    write_status("🟡", "Script started. Initializing Undetected Playwright...")
 
     with sync_playwright() as p:
         try:
-            # হেডার বা অটোমেশন ফ্ল্যাগ হাইড করার জন্য অতিরিক্ত আর্গুমেন্ট
-            browser = p.chromium.launch(
-                headless=True,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox"
-                ]
-            )
-            
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                viewport={"width": 1920, "height": 1080}
-            )
-            
-            page = context.new_page()
-            
-            # স্টিলথ মোড এপ্লাই করা যাতে বট ডিটেক্ট না হয়
-            stealth_sync(page)
-            write_status("🟢", "Stealth mode applied to browser successfully.")
+            # undetected-playwright ব্যবহার করে ব্রাউজার লঞ্চ করা
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            write_status("🟢", "Undetected browser launched successfully.")
 
             master_link = None
 
@@ -60,16 +43,15 @@ def get_video_stream():
             write_status("🟡", "Navigating to target URL: https://playsza.st/player.php?id=willow")
             page.goto("https://playsza.st/player.php?id=willow", timeout=60000)
             
-            # ক্লাউডফ্লেয়ার পাস হওয়ার জন্য ডাইনামিক চেক (সর্বোচ্চ ৪০ সেকেন্ড)
-            write_status("🟡", "Waiting for Cloudflare protection to clear with stealth...")
+            # ক্লাউডফ্লেয়ার বাইপাসের জন্য পর্যাপ্ত সময় ও ডাইনামিক চেক (সর্বোচ্চ ৪৫ সেকেন্ড)
+            write_status("🟡", "Waiting for Cloudflare challenge to clear...")
             bypassed = False
-            for i in range(40):
+            for i in range(45):
                 time.sleep(1)
                 title = page.title()
                 content = page.content()
                 
-                # যদি ক্লাউডফ্লেয়ার পেজ টাইটেল বা টেক্সট রিমুভ হয়ে যায়
-                if "Just a moment" not in title and "Checking your browser" not in content and "ddg" not in content:
+                if "Just a moment" not in title and "Checking your browser" not in content:
                     write_status("🟢", f"Cloudflare bypassed successfully after {i+1} seconds!")
                     bypassed = True
                     break
@@ -77,10 +59,10 @@ def get_video_stream():
             if not bypassed:
                 write_status("🔴", "Failed: Cloudflare challenge could not be bypassed within time limit.")
 
-            # প্লেয়ার ও আইফ্রেম লোড হওয়ার জন্য আরও কিছুক্ষণ অপেক্ষা করে লিংক খোঁজা
+            # প্লেয়ার লোড হওয়ার জন্য অপেক্ষা করে লিংক খোঁজা
             if bypassed:
                 write_status("🟡", "Waiting for video player frames to load...")
-                time.sleep(8)
+                time.sleep(10)
 
                 if not master_link:
                     write_status("🟡", "Scanning frames and page DOM for .m3u8 links...")
