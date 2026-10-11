@@ -21,8 +21,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          playwright install chromium
-          playwright install-deps chromium
+          # উবুন্টুর লেটেস্ট ভার্সনের জন্য প্রয়োজনীয় লাইব্রেরি ও ক্রোমিয়াম ইনস্টল করার কমান্ড
+          npx playwright install-deps chromium
+          python -m playwright install chromium
 
       - name: Run Python Script
         run: python main.py
