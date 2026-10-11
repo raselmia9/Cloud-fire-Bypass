@@ -24,7 +24,6 @@ def get_video_stream():
 
     with sync_playwright() as p:
         try:
-            # headless=False দিয়ে লোকাল টেস্ট করতে পারেন, GitHub-এর জন্য True থাকবে
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -46,27 +45,42 @@ def get_video_stream():
             write_status("🟡", "Navigating to target URL: https://playsza.st/player.php?id=willow")
             page.goto("https://playsza.st/player.php?id=willow", timeout=60000)
             
-            # ক্লাউডফ্লেয়ার ও প্লেয়ার লোড হওয়ার জন্য সময় বাড়িয়ে ২৫ সেকেন্ড করা হলো
-            write_status("🟡", "Waiting for Cloudflare verification and player load (25 seconds)...")
-            time.sleep(25)
+            # টাইমআউট লজিক: সর্বোচ্চ ৩০ সেকেন্ড লুপ চালিয়ে চেক করব ক্লাউডফ্লেয়ার পাস হলো কি না
+            write_status("🟡", "Waiting for Cloudflare protection to clear dynamically...")
+            bypassed = False
+            for i in range(30):
+                time.sleep(1)
+                title = page.title()
+                content = page.content()
+                
+                # ক্লাউডফ্লেয়ার পেজের টাইটেল বা টেক্সট সাধারণত এ রকম থাকে, সেগুলো না থাকলে বাইপাস ধরে নেওয়া যায়
+                if "Just a moment" not in title and "Checking your browser" not in content:
+                    write_status("🟢", f"Cloudflare bypassed successfully after {i+1} seconds!")
+                    bypassed = True
+                    break
+            
+            if not bypassed:
+                write_status("🔴", "Failed: Cloudflare challenge could not be bypassed within time limit.")
 
-            # নেটওয়ার্ক রিকোয়েস্টে না পেলে আইফ্রেম বা সোর্স ট্যাগ থেকে খোঁজা
-            if not master_link:
-                write_status("🟡", "Scanning frames and page DOM for .m3u8 links...")
-                for frame in page.frames:
-                    try:
-                        content = frame.content()
-                        # যদি আইফ্রেমের ভেতরে ডিরেক্ট লিংক থাকে
-                        if ".m3u8" in content:
-                            write_status("🟢", "Found .m3u8 reference inside frame content!")
-                            # কন্টেন্ট থেকে লিংক এক্সট্রাক্ট করার চেষ্টা
-                            import re
-                            urls = re.findall(r'https?://[^\s<>"]+?\.m3u8[^\s<>"]*', content)
-                            if urls:
-                                master_link = urls[0]
-                                break
-                    except Exception as e:
-                        pass
+            # প্লেয়ার ও আইফ্রেম লোড হওয়ার জন্য আরও ৫ সেকেন্ড অপেক্ষা করে লিংক খোঁজা
+            if bypassed:
+                write_status("🟡", "Waiting for video player frames to load...")
+                time.sleep(5)
+
+                if not master_link:
+                    write_status("🟡", "Scanning frames and page DOM for .m3u8 links...")
+                    for frame in page.frames:
+                        try:
+                            f_content = frame.content()
+                            if ".m3u8" in f_content:
+                                write_status("🟢", "Found .m3u8 reference inside frame content!")
+                                import re
+                                urls = re.findall(r'https?://[^\s<>"]+?\.m3u8[^\s<>"]*', f_content)
+                                if urls:
+                                    master_link = urls[0]
+                                    break
+                        except Exception as e:
+                            pass
 
             browser.close()
 
@@ -74,10 +88,10 @@ def get_video_stream():
                 write_status("🟢", "Process successful! Saving M3U playlist...")
                 save_m3u(master_link, "Willow Live TV")
             else:
-                write_status("🔴", "Failed: Master link (.m3u8) could not be captured from network or DOM.")
+                write_status("🔴", "Failed: Master link (.m3u8) could not be captured.")
 
         except Exception as e:
-                write_status("🔴", f"Critical Error occurred: {str(e)}")
+            write_status("🔴", f"Critical Error occurred: {str(e)}")
 
 if __name__ == "__main__":
     get_video_stream()
