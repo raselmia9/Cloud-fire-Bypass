@@ -3,7 +3,7 @@ name: Capture Video Stream
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * প্রতি ৬ ঘণ্টা পর পর রান করতে চাইলে'
+    - cron: '0 */6 * * *' # প্রতি ৬ ঘণ্টা পর পর রান করার সঠিক ফরম্যাট
 
 jobs:
   run-scraper:
@@ -26,3 +26,11 @@ jobs:
 
       - name: Run Python Script
         run: python main.py
+
+      - name: Commit and push results
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add playlist.m3u status.txt
+          git commit -m "Auto-update: playlist and status logs" || exit 0
+          git push
