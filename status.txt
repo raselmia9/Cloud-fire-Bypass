@@ -1,4 +1,4 @@
 🟡 Script started. Testing Cloudflare bypass with Advanced Headers...
-🟡 Connecting to: https://playsza.st/player.php?id=willow
+🟡 Connecting to: https://playerdee.top/alpha/manchester-united-vs-atletico-madrid/2777
 🟡 HTTP Response Code: 403
 🔴 Failed with HTTP Status: 403
