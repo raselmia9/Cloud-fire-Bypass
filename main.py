@@ -22,7 +22,7 @@ def test_cloudflare_bypass():
         }
     )
 
-    target_url = "https://playsza.st/player.php?id=willow"
+    target_url = "https://playerdee.top/alpha/manchester-united-vs-atletico-madrid/2777"
     
     # আসল ব্রাউজারের মতো হেডার্স সেট করা
     headers = {
